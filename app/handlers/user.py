@@ -16,12 +16,13 @@ class FSMEnterContract(StatesGroup):
     correct_contract = State()
     renew_subscription = State()
 
+#TODO состояния должны идти до других фильтров
 
 # Обработчик первой команды /start
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message, state: FSMContext, session: AsyncSession):
-    is_user_registered = await requests.orm_user_exists(session, message.from_user.id)
-    if is_user_registered:
+    user = await requests.orm_get_user(session, message.from_user.id)
+    if user:
         await message.answer(
             text=LEXICON['//start'],
             reply_markup=create_main_kb()
@@ -46,7 +47,7 @@ async def process_another_start_command(message: Message, state: FSMContext):
 
 
 # Обработчик успешной передачи номера договора
-@router.message(F.text, FSMEnterContract.enter_contract)
+@router.message(FSMEnterContract.enter_contract, F.text)
 async def process_contract_sent(message: Message, state: FSMContext, session: AsyncSession):
     success = await requests.orm_user_bind_contract(session, message.text, message.from_user.id)
     if success:
@@ -63,7 +64,7 @@ async def process_contract_sent(message: Message, state: FSMContext, session: As
 
     
 # Обработчик кнопки оплаты подписки
-@router.message(F.text == "🔑 Продлить подписку", FSMEnterContract.correct_contract)
+@router.message(FSMEnterContract.correct_contract, F.text == "🔑 Продлить подписку")
 async def process_renew_sub_button(message: Message):
     await message.answer(
         text=LEXICON['renew_subscription'],
@@ -75,18 +76,24 @@ async def process_renew_sub_button(message: Message):
 
 
 # Обработчик кнопки профиля
-@router.message(F.text == "👤 Профиль", FSMEnterContract.correct_contract)
-async def process_profile_button(message: Message):
-    await message.answer(text=LEXICON['profile'])
+@router.message(FSMEnterContract.correct_contract, F.text == "👤 Профиль")
+async def process_profile_button(message: Message, session: AsyncSession):
+    user = await requests.orm_get_user(session, message.from_user.id)
+    print(user)
+    await message.answer(text=LEXICON['profile'].format(
+        contract_num=user.contract_num,
+        sub_status=(LEXICON['inactive'], LEXICON['active'])[user.subscription],
+        exp_date=user.exp_date
+    ))
   
     
 # Обработчик кнопки помощи
-@router.message(F.text == "❓ Помощь", FSMEnterContract.correct_contract)
+@router.message(FSMEnterContract.correct_contract, F.text == "❓ Помощь")
 async def process_reply_help_button(message: Message):
     await message.answer(text=LEXICON['help'])
     
     
 # Обработчик кнопки about
-@router.message(F.text == "🧠 Об HFK", FSMEnterContract.correct_contract)
+@router.message(FSMEnterContract.correct_contract, F.text == "🧠 Об HFK")
 async def process_about_button(message: Message):
     await message.answer(text=LEXICON['about'])
