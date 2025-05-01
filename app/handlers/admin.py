@@ -8,9 +8,10 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import default_state, StatesGroup, State
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database import requests
+from services.xui import XUIApi
 from filters.basic import IsAdmin
 from lexicon.lexicon import LEXICON_ADMIN
-from database import requests
 from keyboards.admin_kbs import create_admin_kb, create_confirm_kb
 
 dotenv.load_dotenv()
@@ -33,7 +34,7 @@ async def greet_admin(message: Message, state: FSMContext):
     
     
 @router.message(Command('cancel'), StateFilter(default_state))
-async def process_fail_cancel_command(message: Message, state: FSMContext):
+async def process_fail_cancel_command(message: Message):
     await message.answer(
         text=LEXICON_ADMIN['nothing_canceled'],
         reply_markup=create_admin_kb()
@@ -58,7 +59,7 @@ async def process_add_contract_button(message: Message, state: FSMContext):
     await state.set_state(FSMWorkWithContracts.add_contract)
 
 
-@router.message(FSMWorkWithContracts.add_contract, F.text)
+@router.message(StateFilter(FSMWorkWithContracts.add_contract, FSMWorkWithContracts.delete_contract), F.text)
 async def add_contract(message: Message, state: FSMContext):
     await state.update_data(contract_num=message.text)
     await message.answer(
@@ -68,24 +69,25 @@ async def add_contract(message: Message, state: FSMContext):
 
 
 @router.callback_query(FSMWorkWithContracts.add_contract, F.data == 'confirm')
-async def process_confirm_adding(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def process_confirm_adding(callback: CallbackQuery, state: FSMContext, session: AsyncSession, xui: XUIApi):
     await callback.message.delete()
     try:
         data = await state.get_data()
-        await requests.orm_add_contract(session, data['contract_num'])
+        await xui.add_client(session, data['contract_num'])
         await callback.message.answer(
             text=LEXICON_ADMIN['contract_added'].format(num=data['contract_num']),
             reply_markup=create_admin_kb()
         )
-    except:
+    except Exception as e:
         await callback.message.answer(
-            text=LEXICON_ADMIN['error'],
+            text=f"{LEXICON_ADMIN['error']}\n\n"
+            "Текст ошибки: \"{e}\"",
             reply_markup=create_admin_kb()
         )
     await state.clear()
     
     
-@router.callback_query(FSMWorkWithContracts.add_contract, F.data == 'cancel')
+@router.callback_query(StateFilter(FSMWorkWithContracts.add_contract, FSMWorkWithContracts.delete_contract), F.data == 'cancel')
 async def process_cancel_adding(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await callback.message.answer(text=LEXICON_ADMIN['/cancel'], reply_markup=create_admin_kb())
@@ -101,28 +103,34 @@ async def process_delete_button(message: Message, state: FSMContext):
     await state.set_state(FSMWorkWithContracts.delete_contract)
     
     
-@router.message(FSMWorkWithContracts.delete_contract, F.text)
-async def delete_contract(message: Message, state: FSMContext, session: AsyncSession):
-    success = await requests.orm_delete_contract(session, contract_num=message.text)
-    if success:
-        await requests.orm_delete_contract(session, message.text)
-        await message.answer(
-            text=LEXICON_ADMIN['deleted'].format(num=message.text),
+@router.callback_query(FSMWorkWithContracts.delete_contract, F.data == 'confirm')
+async def delete_client(
+    callback: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+    xui: XUIApi
+):
+    data = await state.get_data()
+    client = await requests.orm_get_client_by_contract(session, data['contract_num'])
+    if client:
+        await xui.delete_client(session, client)
+        await callback.message.answer(
+            text=LEXICON_ADMIN['deleted'].format(num=data['contract_num']),
             reply_markup=create_admin_kb()
         )
     else:
-        await message.answer(
+        await callback.message.answer(
             text=LEXICON_ADMIN['contract_not_found'],
             reply_markup=create_admin_kb()
         )
     await state.clear()
     
-    
+#TODO удаление через инлайн-кнопки
 # --------------------------------------------------------------------------
 
 
 @router.message(F.text == "Показать все контракты", StateFilter(default_state))
-async def process_show_all_button(message: Message, state: FSMContext, session: AsyncSession):
+async def process_show_all_button(message: Message, session: AsyncSession):
     contracts = await requests.orm_get_contracts(session)
     if not contracts:
         await message.answer(text=LEXICON_ADMIN['no_contracts_found'])

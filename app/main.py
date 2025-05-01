@@ -12,6 +12,7 @@ from keyboards.main_menu import set_main_menu
 from lexicon.lexicon import LEXICON
 from database.engine import create_db, async_session
 from middlewares.db import DataBaseSession
+from middlewares.http_client import XUIMiddleware
 
 
 # Загрузка переменных окружения
@@ -45,6 +46,11 @@ async def main():
     
     # Регистрация мидлварей
     dp.update.middleware(DataBaseSession(session_pool=async_session))
+    dp.update.middleware(XUIMiddleware(
+        base_url=os.getenv('XUI_URL'),
+        username=os.getenv('XUI_USERNAME'),
+        password=os.getenv('XUI_PASSWORD')
+    ))
 
     # Установка описания и меню бота
     await bot.set_my_description(LEXICON['description'])
