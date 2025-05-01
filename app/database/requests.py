@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from database.engine import async_session
 from database.models import Client
 
@@ -59,6 +61,15 @@ async def orm_client_bind_contract(session: AsyncSession, contract_num: str, tg_
         tg_id=int(tg_id),
         subscription=True,
         exp_date=exp_date
+    )
+    await session.execute(query)
+    await session.commit()
+    return True
+
+
+async def orm_extend_subscription(session: AsyncSession, tg_id: str, new_exp_date: datetime):
+    query = update(Client).where(Client.tg_id == int(tg_id)).values(
+        exp_date=new_exp_date
     )
     await session.execute(query)
     await session.commit()

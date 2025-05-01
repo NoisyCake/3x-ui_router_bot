@@ -93,6 +93,7 @@ class XUIApi():
         
         await requests.orm_client_bind_contract(session, contract_num, tg_id, expiry_date)
         
+        
     async def delete_client(self, session: AsyncSession, client: Client):
         if client.subscription:
             await self.client.post(
@@ -101,3 +102,40 @@ class XUIApi():
             )
             
         await requests.orm_delete_contract(session, client.contract_num)
+        
+        
+    async def extend_subscription(self, session: AsyncSession, tg_id: str, period: str | int):
+        client = await requests.orm_get_client(session, int(tg_id))
+        if client.exp_date < datetime.now(timezone.utc):
+            expiry_date = datetime.now(timezone.utc) + timedelta(days=30)
+        else:
+            expiry_date = client.exp_date + timedelta(days=int(period))
+        expiry_timestamp = int(expiry_date.timestamp() * 1000)
+        
+        client_settings = {
+            'clients': [{
+                'id':  client.uuid,
+                'flow': "xtls-rprx-vision",
+                'email': client.contract_num,
+                'limitIp': 1,
+                'totalGB': 0,
+                'expiryTime': expiry_timestamp,
+                'enable': True,
+                'tgId': tg_id,
+                'subId': client.contract_num,
+                'reset': 0
+            }]
+        }
+        
+        payload = {
+            'id': 2,
+            'settings': json.dumps(client_settings)
+        }
+        
+        await self.client.post(
+            f"/panel/api/inbounds/updateClient/{client.uuid}",
+            json=payload,
+            headers={"Accept": "application/json"}
+        )
+        
+        await requests.orm_extend_subscription(session, tg_id, expiry_date)
