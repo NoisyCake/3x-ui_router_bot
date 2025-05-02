@@ -6,6 +6,8 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio import Redis
 
 from handlers import admin, user
 from keyboards.main_menu import set_main_menu
@@ -33,12 +35,16 @@ async def main():
     # Подключение к базе данных
     await create_db()
     
+    # Инициализация хранилища Redis
+    redis = Redis(host='localhost')
+    storage = RedisStorage(redis=redis)
+    
     # Инициализация бота с диспетчером
     bot = Bot(
         token=os.getenv('BOT_TOKEN'),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
-    dp = Dispatcher()
+    dp = Dispatcher(storage=storage)
     
     # Регистрация роутеров
     dp.include_router(admin.router)

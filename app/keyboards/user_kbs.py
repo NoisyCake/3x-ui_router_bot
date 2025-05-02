@@ -29,14 +29,14 @@ def create_1row_kb(LEXICON: dict[str, str]) -> InlineKeyboardMarkup:
 
 
 def create_payment_kb(payment_url: str, payment_id: str) -> InlineKeyboardMarkup:
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
             text=LEXICON_PAY_KB['pay'],
             url=payment_url
-        ),
-        InlineKeyboardButton(
+        )],
+        [InlineKeyboardButton(
             text=LEXICON_PAY_KB['check'],
             callback_data=payment_id
-        )
-    ]])
+        )]
+    ])
     return kb

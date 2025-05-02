@@ -1,3 +1,5 @@
+from typing import Any
+
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
@@ -29,13 +31,13 @@ def create_confirm_kb() -> InlineKeyboardMarkup:
 
 
 def create_view_pag_kb(
-    contracts: list[tuple[str]],
+    contracts: list[dict[str, Any]],
     cur_page: int,
     total_pages: int
 ) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
     for contract in contracts:
-        contract_id, _ = contract
+        contract_id = contract['contract_id']
         kb_builder.row(InlineKeyboardButton(
             text=contract_id,
             callback_data=f'view_contract:{contract_id}'

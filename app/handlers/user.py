@@ -88,7 +88,8 @@ async def process_contract_sent(
     session: AsyncSession,
     xui: XUIApi
 ):
-    if await requests.orm_contract_in_db(session, message.text):
+    client = await requests.orm_get_client_by_contract(session, message.text)
+    if client and client.subscription == 0:
         await xui.update_client(session, message.text, message.from_user.id)
         await message.answer(
             text=LEXICON['correct_contract_id'],

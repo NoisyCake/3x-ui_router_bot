@@ -40,13 +40,13 @@ async def greet_admin(message: Message, state: FSMContext):
     
 @router.message(Command('cancel'), StateFilter(default_state))
 async def process_fail_cancel_command(message: Message):
-    await message.edit_text(text=LEXICON['nothing_canceled'])
+    await message.answer(text=LEXICON['nothing_canceled'])
         
         
 @router.message(Command('cancel'), ~StateFilter(default_state))
 async def process_cancel_command(message: Message, state: FSMContext):
     await message.delete()
-    await message.edit_text(text=LEXICON['/cancel'])
+    await message.answer(text=LEXICON['/cancel'])
     await state.clear()
     
     
@@ -147,7 +147,7 @@ async def view_contract(callback: CallbackQuery, session: AsyncSession):
     contract_id = callback.data.split(':')[1]
     client = await requests.orm_get_client_by_contract(session, contract_id)
     try:
-        username = (await bot.get_chat(client.tg_id)).username
+        username = f'@{(await bot.get_chat(client.tg_id)).username}'
     except:
         username = '—'
     

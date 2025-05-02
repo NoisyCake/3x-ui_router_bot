@@ -1,3 +1,4 @@
+import os
 import uuid
 import json
 from datetime import datetime, timedelta, timezone
@@ -47,7 +48,7 @@ class XUIApi():
         }
         
         payload = {
-            'id': 2,
+            'id': int(os.getenv('XUI_INBOUND_ID')),
             'settings': json.dumps(client_settings)
         }
         
@@ -81,7 +82,7 @@ class XUIApi():
         }
         
         payload = {
-            'id': 2,
+            'id': int(os.getenv('XUI_INBOUND_ID')),
             'settings': json.dumps(client_settings)
         }
         
@@ -96,7 +97,7 @@ class XUIApi():
         
     async def delete_client(self, session: AsyncSession, client: Client):
         await self.client.post(
-            f"/panel/api/inbounds/{2}/delClient/{client.uuid}",
+            f"/panel/api/inbounds/{int(os.getenv('XUI_INBOUND_ID'))}/delClient/{client.uuid}",
             headers={"Accept": "application/json"}
         )
             
@@ -127,7 +128,7 @@ class XUIApi():
         }
         
         payload = {
-            'id': 2,
+            'id': int(os.getenv('XUI_INBOUND_ID')),
             'settings': json.dumps(client_settings)
         }
         

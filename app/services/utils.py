@@ -1,5 +1,6 @@
 import uuid
 import base58
+from typing import Any
 
 
 def generate_contract_id() -> str:
@@ -8,8 +9,9 @@ def generate_contract_id() -> str:
     return encoded[:14]
 
 
-def get_paginated_contracts(contracts: list[tuple[str]], page: int) -> tuple[list[tuple[str]], int]:
-    total_pages = max(1, (len(contracts) + 9) // 10)
-    start = (page - 1) * 10
-    end = start + 10
+def get_paginated_contracts(contracts: list[dict[str, Any]], page: int) -> tuple[list[dict[str, Any]], int]:
+    page_size = 10
+    total_pages = max(1, (len(contracts) + 9) // page_size)
+    start = (page - 1) * page_size
+    end = start + page_size
     return contracts[start:end], total_pages
