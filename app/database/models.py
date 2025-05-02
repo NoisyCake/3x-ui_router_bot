@@ -12,7 +12,7 @@ class Client(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=True)
-    contract_num: Mapped[int] = mapped_column(BigInteger, unique=True)
+    contract_id: Mapped[str] = mapped_column(String, unique=True)
     subscription: Mapped[bool] = mapped_column(Boolean, default=False)
-    exp_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    exp_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     uuid: Mapped[str] = mapped_column(String, unique=True, nullable=True)

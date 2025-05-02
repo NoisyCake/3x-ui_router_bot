@@ -28,20 +28,20 @@ class XUIApi():
             raise Exception("Login failed")
 
 
-    async def add_client(self, session: AsyncSession, contract_num: str):
+    async def add_client(self, session: AsyncSession, contract_id: str):
         client_uuid = str(uuid.uuid4())
         
         client_settings = {
             'clients': [{
                 'id': client_uuid,
                 'flow': "xtls-rprx-vision",
-                'email': contract_num,
+                'email': contract_id,
                 'limitIp': 1,
                 'totalGB': 0,
                 'expiryTime': 0,
                 'enable': True,
                 'tgId': "",
-                'subId': contract_num,
+                'subId': contract_id,
                 'reset': 0
             }]
         }
@@ -57,11 +57,11 @@ class XUIApi():
             headers={"Accept": "application/json"}
         )
         
-        await requests.orm_add_contract(session, contract_num, client_uuid)
+        await requests.orm_add_contract(session, contract_id, client_uuid)
         
         
-    async def update_client(self, session: AsyncSession, contract_num: str, tg_id: str):
-        client = await requests.orm_get_client_by_contract(session, contract_num)
+    async def update_client(self, session: AsyncSession, contract_id: str, tg_id: str):
+        client = await requests.orm_get_client_by_contract(session, contract_id)
         expiry_date = datetime.now(timezone.utc) + timedelta(days=30)
         expiry_timestamp = int(expiry_date.timestamp() * 1000)
         
@@ -69,13 +69,13 @@ class XUIApi():
             'clients': [{
                 'id':  client.uuid,
                 'flow': "xtls-rprx-vision",
-                'email': contract_num,
+                'email': contract_id,
                 'limitIp': 1,
                 'totalGB': 0,
                 'expiryTime': expiry_timestamp,
                 'enable': True,
                 'tgId': tg_id,
-                'subId': contract_num,
+                'subId': contract_id,
                 'reset': 0
             }]
         }
@@ -91,17 +91,16 @@ class XUIApi():
             headers={"Accept": "application/json"}
         )
         
-        await requests.orm_client_bind_contract(session, contract_num, tg_id, expiry_date)
+        await requests.orm_client_bind_contract(session, contract_id, tg_id, expiry_date)
         
         
     async def delete_client(self, session: AsyncSession, client: Client):
-        if client.subscription:
-            await self.client.post(
-                f"/panel/api/inbounds/{2}/delClient/{client.uuid}",
-                headers={"Accept": "application/json"}
-            )
+        await self.client.post(
+            f"/panel/api/inbounds/{2}/delClient/{client.uuid}",
+            headers={"Accept": "application/json"}
+        )
             
-        await requests.orm_delete_contract(session, client.contract_num)
+        await requests.orm_delete_contract(session, client.contract_id)
         
         
     async def extend_subscription(self, session: AsyncSession, tg_id: str, period: str | int):
@@ -116,13 +115,13 @@ class XUIApi():
             'clients': [{
                 'id':  client.uuid,
                 'flow': "xtls-rprx-vision",
-                'email': client.contract_num,
+                'email': client.contract_id,
                 'limitIp': 1,
                 'totalGB': 0,
                 'expiryTime': expiry_timestamp,
                 'enable': True,
                 'tgId': tg_id,
-                'subId': client.contract_num,
+                'subId': client.contract_id,
                 'reset': 0
             }]
         }

@@ -12,7 +12,6 @@ from database import requests
 from keyboards import user_kbs
 from services.xui import XUIApi
 from lexicon.lexicon import (LEXICON,
-                             LEXICON_PAY_KB,
                              LEXICON_PERIODS_KB,
                              LEXICON_PAYMENT_METHODS_KB)
 
@@ -92,7 +91,7 @@ async def process_contract_sent(
     if await requests.orm_contract_in_db(session, message.text):
         await xui.update_client(session, message.text, message.from_user.id)
         await message.answer(
-            text=LEXICON['correct_contract_num'],
+            text=LEXICON['correct_contract_id'],
             reply_markup=user_kbs.create_main_kb()
         )
         await state.set_state(FSMClient.correct_contract)
@@ -105,7 +104,7 @@ async def process_contract_sent(
     
 # Обработчик кнопки оплаты подписки
 @router.message(FSMClient.correct_contract, F.text == "🔑 Продлить подписку")
-async def process_extend_sub_button(message: Message, state: FSMContext, session: AsyncSession):
+async def process_extend_sub_button(message: Message, session: AsyncSession):
     client = await requests.orm_get_client(session, message.from_user.id)
     await message.answer(
         text=LEXICON['extend_subscription'].format(
@@ -173,7 +172,7 @@ async def process_payment(
 async def process_profile_button(message: Message, session: AsyncSession):
     client = await requests.orm_get_client(session, message.from_user.id)
     await message.answer(text=LEXICON['profile'].format(
-        contract_num=client.contract_num,
+        contract_id=client.contract_id,
         sub_status=(LEXICON['inactive'], LEXICON['active'])[client.subscription],
         exp_date=client.exp_date.strftime('%d.%m.%Y')
     ))

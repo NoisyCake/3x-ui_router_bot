@@ -7,7 +7,7 @@ from database.models import Base
 
 dotenv.load_dotenv()
 
-engine = create_async_engine(url=os.getenv('DATABASE2'), echo=True)
+engine = create_async_engine(url=os.getenv('DATABASE'))
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
